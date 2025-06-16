@@ -16,6 +16,7 @@ using namespace CodeGeneration::Flatbuffers;
 namespace CodeGeneration
 {
     std::string CppCodeBuilder::BuildTypesHeader(
+        std::string_view generated_namespace,
         const std::vector<DeveloperType>& developer_types_insertion_list,
         const std::vector<DeveloperType>& abi_function_developer_types)
     {
@@ -55,7 +56,7 @@ namespace CodeGeneration
         }
 
         auto start_of_file = std::format(c_developer_types_start_of_file, c_autogen_header_string);
-        auto body = std::format(c_developer_types_namespace, types_header.str(), struct_metadata.str());
+        auto body = std::format(c_developer_types_namespace, generated_namespace, types_header.str(), struct_metadata.str());
 
         return std::format("{}{}\n", start_of_file, body);
     }
@@ -494,22 +495,6 @@ namespace CodeGeneration
             function_body.str());
     }
 
-    std::string CppCodeBuilder::BuildEnclaveModuleDefinitionFile(std::string_view exported_functions)
-    {
-        auto module_def = std::format(c_enclave_def_file_content, c_autogen_header_string, exported_functions);
-
-        // Replace the // in the autogen header. This way we can have a single source for the header
-        // instead of duplicating it.
-        size_t pos = module_def.find("//");
-        while (pos != std::string::npos)
-        {
-            module_def.replace(pos, 2, ";");
-            pos = module_def.find("//", pos + 1U);
-        }
-
-        return module_def;
-    }
-
     CppCodeBuilder::HostToEnclaveContent CppCodeBuilder::BuildHostToEnclaveFunctions(
         std::string_view generated_namespace,
         const std::unordered_map<std::string, DeveloperType>& developer_types,
@@ -519,16 +504,9 @@ namespace CodeGeneration
         vtl0_class_public_portion << c_vtl0_enclave_class_public_keyword;
 
         std::ostringstream vtl1_abi_boundary_functions {};
-        vtl1_abi_boundary_functions << c_vtl1_abi_boundary_functions_comment;
-
         std::ostringstream vtl1_abi_impl_functions {};
-        vtl1_abi_impl_functions << c_vtl1_abi_impl_functions_comment;
-
         std::ostringstream vtl1_developer_declaration_functions {};
-        vtl1_developer_declaration_functions << c_vtl1_developer_declaration_functions_comment;
-
         std::ostringstream vtl0_side_of_vtl1_developer_impl_functions {};
-        vtl0_side_of_vtl1_developer_impl_functions << c_vtl0_side_of_vtl1_developer_impl_functions_comment;
 
         std::ostringstream vtl1_generated_module_exports {};
 
@@ -602,8 +580,7 @@ namespace CodeGeneration
             std::move(vtl0_class_public_portion),
             std::format("{}{}{}",c_autogen_header_string, c_vtl1_enclave_stub_includes, vtl1_stubs_in_namespace),
             std::move(vtl1_developer_declaration_functions),
-            std::move(vtl1_abi_impl_functions),
-            BuildEnclaveModuleDefinitionFile(vtl1_generated_module_exports.str())
+            std::move(vtl1_abi_impl_functions)
         };
     }
 
@@ -623,16 +600,9 @@ namespace CodeGeneration
         std::ostringstream vtl1_callback_functions {};
 
         std::ostringstream vtl0_abi_boundary_functions {};
-        vtl0_abi_boundary_functions << c_vtl0_abi_boundary_functions_comment;
-
         std::ostringstream vtl0_abi_impl_callback_functions {};
-        vtl0_abi_impl_callback_functions << c_vtl0_abi_impl_callback_functions_comment;
-
         std::ostringstream vtl0_developer_declaration_functions {};
-        vtl0_developer_declaration_functions << c_vtl0_developer_declaration_functions_comment;
-
         std::ostringstream vtl1_side_of_vtl0_callback_functions {};
-        vtl1_side_of_vtl0_callback_functions << c_vtl1_side_of_vtl0_developer_callback_functions_comment;
 
         // Add allocate vtl0 memory function from ABI base file.
         std::ostringstream vtl0_class_method_addresses;
@@ -771,23 +741,14 @@ namespace CodeGeneration
             vtl0_class_in_namespace);
     }
 
-    std::string CppCodeBuilder::CombineAndBuildVtl1ImplementationsHeader(
+    std::string CppCodeBuilder::BuildHeader(
         std::string_view generated_namespace_name,
-        const std::ostringstream& vtl1_developer_declarations,
-        const std::ostringstream& vtl1_callback_impl_functions,
-        const std::ostringstream& vtl1_abi_impl_functions)
+        const std::ostringstream& header_content)
     {
-        auto vtl1_impls_in_namespace = std::format(
-            c_vtl1_enclave_func_impl_namespace, 
-            generated_namespace_name,
-            vtl1_developer_declarations.str(),
-            vtl1_callback_impl_functions.str(),
-            vtl1_abi_impl_functions.str());
-
         return std::format("{}{}{}",
-            c_autogen_header_string, 
-            c_vtl1_enclave_func_impl_start_of_file,
-            vtl1_impls_in_namespace);
+            c_autogen_header_string,
+            generated_namespace_name,
+            header_content.str());
     }
 
     std::string CppCodeBuilder::BuildVtl1ExportedFunctionsSourcefile(

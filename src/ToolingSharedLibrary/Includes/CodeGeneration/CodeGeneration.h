@@ -21,7 +21,6 @@ namespace CodeGeneration
             std::string m_vtl1_stub_functions_header_content{};
             std::ostringstream m_vtl1_developer_declaration_functions {};
             std::ostringstream m_vtl1_abi_impl_functions {};
-            std::string m_vtl1_enclave_module_definition_content {};
         };
 
         struct EnclaveToHostContent
@@ -96,6 +95,7 @@ namespace CodeGeneration
             const FunctionParametersInfo& param_info);
 
         std::string BuildTypesHeader(
+            std::string_view generated_namespace,
             const std::vector<DeveloperType>& developer_types_insertion_list,
             const std::vector<DeveloperType>& abi_function_developer_types);
 
@@ -106,8 +106,6 @@ namespace CodeGeneration
             std::string_view abi_function_to_call,
             bool is_vtl0_callback,
             const FunctionParametersInfo& param_info);
-
-        std::string BuildEnclaveModuleDefinitionFile(std::string_view exported_functions);
         
         HostToEnclaveContent BuildHostToEnclaveFunctions(
             std::string_view generated_namespace,
@@ -126,11 +124,9 @@ namespace CodeGeneration
             const std::ostringstream& vtl0_class_public_content,
             const std::ostringstream& vtl0_class_private_content);
 
-        std::string CombineAndBuildVtl1ImplementationsHeader(
-            std::string_view edl_file_name,
-            const std::ostringstream& vtl1_developer_declarations,
-            const std::ostringstream& vtl1_callback_impl_functions,
-            const std::ostringstream& vtl1_abi_impl_functions);
+        std::string BuildHeader(
+            std::string_view generated_namespace_name,
+            const std::ostringstream& header_content);
 
         std::string BuildVtl1ExportedFunctionsSourcefile(
             std::string_view generated_namespace_name,

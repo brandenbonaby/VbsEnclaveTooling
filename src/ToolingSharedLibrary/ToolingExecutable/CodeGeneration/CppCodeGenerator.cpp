@@ -70,6 +70,7 @@ namespace CodeGeneration
         // Create developer types. This is shared between
         // the HostApp and the enclave.
         std::string enclave_types_header = BuildTypesHeader(
+            m_generated_namespace_name,
             m_edl.m_developer_types_insertion_order_list,
             abi_function_developer_types);
 
@@ -97,25 +98,36 @@ namespace CodeGeneration
             save_location = enclave_headers_location;
 
             SaveFileToOutputFolder(
-                c_trust_vtl1_stubs_header,
+                c_trust_vtl1_exported_stubs_header,
                 enclave_headers_location,
                 host_to_enclave_content.m_vtl1_stub_functions_header_content);
 
-            SaveFileToOutputFolder(
-                c_output_module_def_file_name,
-                enclave_headers_location,
-                host_to_enclave_content.m_vtl1_enclave_module_definition_content);
-
-            auto vtl1_impl_header = CombineAndBuildVtl1ImplementationsHeader(
+            auto vtl1_trusted_definitions_header = BuildHeader(
                m_generated_namespace_name,
-               host_to_enclave_content.m_vtl1_developer_declaration_functions,
-               enclave_to_host_content.m_vtl1_side_of_vtl0_callback_functions,
+               host_to_enclave_content.m_vtl1_developer_declaration_functions);
+
+            SaveFileToOutputFolder(
+                c_trusted_vtl1_definitions_header,
+                enclave_headers_location,
+                vtl1_trusted_definitions_header);
+
+            auto vtl1_abi_stub_header = BuildHeader(
+               m_generated_namespace_name,
                host_to_enclave_content.m_vtl1_abi_impl_functions);
 
             SaveFileToOutputFolder(
-                c_trusted_vtl1_impl_header,
+                c_trusted_abi_stubs_header,
                 enclave_headers_location,
-                vtl1_impl_header);
+                vtl1_abi_stub_header);
+
+            auto vtl1_untrusted_stub_header = BuildHeader(
+               m_generated_namespace_name,
+               enclave_to_host_content.m_vtl1_side_of_vtl0_callback_functions);
+
+            SaveFileToOutputFolder(
+                c_untrusted_vtl1_stubs_header,
+                enclave_headers_location,
+                vtl1_untrusted_stub_header);
 
             SaveFileToOutputFolder(
                 c_developer_types_header,

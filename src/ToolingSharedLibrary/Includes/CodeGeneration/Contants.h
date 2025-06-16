@@ -12,19 +12,21 @@ namespace CodeGeneration
 
     static inline constexpr std::string_view c_developer_types_header = "DeveloperTypes.h";
 
-    static inline constexpr std::string_view c_trust_vtl1_stubs_header = "Stubs.cpp";
+    static inline constexpr std::string_view c_trust_vtl1_exported_stubs_header = "ExportedStubCallouts.cpp";
 
-    static inline constexpr std::string_view c_untrusted_vtl0_stubs_header = "Stubs.h";
+    static inline constexpr std::string_view c_untrusted_vtl0_stubs_header = "EnclaveClass.h";
 
-    static inline constexpr std::string_view c_trusted_vtl1_impl_header = "Implementations.h";
+    static inline constexpr std::string_view c_trusted_vtl1_definitions_header = "TrustedDefinitions.h";
+
+    static inline constexpr std::string_view c_trusted_abi_stubs_header = "AbiDefinitionStubs.h";
+
+    static inline constexpr std::string_view c_untrusted_vtl1_stubs_header = "UntrustedStubs.h";
 
     static inline constexpr std::string_view c_enclave_exports_source = "{}_Exports.cpp";
 
     static inline constexpr std::string_view c_output_folder_for_generated_trusted_functions = R"(VbsEnclave\Enclave)";
 
     static inline constexpr std::string_view c_output_folder_for_generated_untrusted_functions = R"(VbsEnclave\HostApp)";
-
-    static inline constexpr std::string_view c_output_module_def_file_name = "vbsenclave.def";
 
     static inline constexpr std::string_view c_abi_boundary_func_declaration = "    __declspec(dllexport) void* {}(void* function_context);\n";
 
@@ -84,7 +86,7 @@ namespace {}
 "\
 #pragma once\n\
 #include <VbsEnclaveABI\\Enclave\\EnclaveHelpers.h>\n\
-#include \"Implementations.h\"\n\
+#include \"TrustedDefinitions.h\"\n\
 \n\
 using namespace VbsEnclaveABI;\n\
 using namespace VbsEnclaveABI::Shared;\n\
@@ -96,7 +98,7 @@ using namespace DeveloperTypes;\n\
     static inline constexpr std::string_view c_vtl1_enclave_stub_namespace = R"(
 namespace {}
 {{
-    namespace VTL1_Stubs
+    namespace Trusted::Stubs
     {{
         static void EnforceMemoryRestriction()
         {{
@@ -193,7 +195,7 @@ using namespace DeveloperTypes;\n\
     static inline constexpr std::string_view c_enclave_export_func_definition = R"(
 extern "C" __declspec(dllexport) void* {}(void* function_context) 
 {{
-    return {}::VTL1_Stubs::{}(function_context);
+    return {}::Trusted::Stubs::{}(function_context);
 }}
 )";
 
@@ -204,7 +206,7 @@ extern "C" __declspec(dllexport) void* {}(void* function_context)
 \n\
 namespace {}\n\
 {{\n\
-    namespace VTL1_Stubs\n\
+    namespace Trusted::Stubs\n\
     {{\n\
 {}\n\
     }}\n\
@@ -212,22 +214,32 @@ namespace {}\n\
 ";
 
 
-    static inline constexpr std::string_view c_vtl1_enclave_func_impl_namespace = R"(
+    static inline constexpr std::string_view c_vtl1_trusted_namespace = R"(
 namespace {}
 {{
-    namespace VTL1_Declarations
+    namespace Trusted::Definitions
     {{
         {}
     }}
+}}
+)";
 
-    namespace VTL0_Callbacks
+    static inline constexpr std::string_view c_vtl1_untrusted_namespace = R"(
+namespace {}
+{{
+    namespace Untrusted::Stubs
     {{
         using namespace VbsEnclaveABI::Shared::Converters;
 
         {}
     }}
+}}
+)";
 
-    namespace AbiDefinitions
+    static inline constexpr std::string_view c_vtl1_abi_definitions_namespace = R"(
+namespace {}
+{{
+    namespace AbiDefinitions::Stubs
     {{
         using namespace VbsEnclaveABI::Shared::Converters;
 
@@ -250,7 +262,7 @@ namespace {}
 ";
 
     static inline constexpr std::string_view c_developer_types_namespace = R"(
-namespace DeveloperTypes
+namespace {}::DeveloperTypes
 {{
 {}
 }}
@@ -260,14 +272,6 @@ namespace VbsEnclaveABI::Shared::Converters
 {{
 {}
 }}
-)";
-
-    static inline constexpr std::string_view c_enclave_def_file_content = R"(
-{}
-LIBRARY
-
-    EXPORTS
-{}
 )";
 
     static inline constexpr std::string_view c_vtl0_class_constructor = 
@@ -337,54 +341,6 @@ R"(     {}_Generated_Stub
 )";
 
     static inline constexpr std::string_view c_static_keyword = "static ";
-
-    static inline constexpr std::string_view c_vtl0_abi_boundary_functions_comment = R"(
-        /***********************************************
-         *    VTL0 Generated ABI Boundary Callbacks    *
-        ************************************************/
-        )";
-
-    static inline constexpr std::string_view c_vtl1_abi_boundary_functions_comment = R"(
-        /***********************************************
-         *    VTL1 Generated ABI Boundary Callbacks    *
-        ************************************************/
-        )";
-
-    static inline constexpr std::string_view c_vtl0_abi_impl_callback_functions_comment = R"(
-        /*****************************************************
-         *    VTL0 Generated ABI Implementation Callbacks    *
-        ******************************************************/
-        )";
-
-    static inline constexpr std::string_view c_vtl1_abi_impl_functions_comment = R"(
-        /*****************************************************
-         *    VTL0 Generated ABI Implementation Callbacks    *
-        ******************************************************/
-        )";
-
-    static inline constexpr std::string_view c_vtl0_developer_declaration_functions_comment = R"(
-        /*****************************************************
-         *    VTL0 Generated Developer Method Declarations   *
-        ******************************************************/
-        )";
-
-    static inline constexpr std::string_view c_vtl1_developer_declaration_functions_comment = R"(
-        /*******************************************************
-         *    VTL1 Generated Developer Function Declarations   *
-        ********************************************************/
-        )";
-
-    static inline constexpr std::string_view c_vtl0_side_of_vtl1_developer_impl_functions_comment = R"(
-        /************************************************************
-         *    VTL0 Side Of VTL1 Developer Function Implementations  *
-        *************************************************************/
-        )";
-
-    static inline constexpr std::string_view c_vtl1_side_of_vtl0_developer_callback_functions_comment = R"(
-        /**********************************************************
-         *    VTL1 Side Of VTL0 Developer Method Implementations  *
-        ***********************************************************/
-)";
 
     static inline constexpr std::string_view c_vtl0_register_callbacks_abi_function = R"(
         HRESULT RegisterVtl0Callbacks()
@@ -459,10 +415,6 @@ R"(     {}_Generated_Stub
             {}
         {}
 )";
-
-    static inline constexpr std::string_view c_dev_type_for_developer_struct = "dev_type_params";
-
-    static inline constexpr std::string_view c_dev_type_for_function_params_struct = "dev_type_params";
 
     static inline constexpr std::string_view c_return_param_for_out_param_ptr = 
 R"(     
