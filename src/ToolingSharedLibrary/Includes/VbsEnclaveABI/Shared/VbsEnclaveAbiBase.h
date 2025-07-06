@@ -133,5 +133,12 @@ namespace VbsEnclaveABI::Shared
         builder.Finish(tableType::Pack(builder, &nativeTable));
         return builder;
     }
+
+    struct AbiRegisterVtl0Callbacks_args
+    {
+        std::vector<std::uint64_t> m_callback_addresses;
+        std::vector<std::string> m_callback_names;
+        std::int32_t m__return_value_;
+    };
 }
 

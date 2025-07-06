@@ -3,6 +3,7 @@
 #pragma once 
 #include <algorithm>
 #include <array>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -10,6 +11,7 @@
 #include <type_traits>
 #include <vector>
 #include <wil/result_macros.h>
+#include <VbsEnclaveABI\Shared\VbsEnclaveAbiBase.h>
 
 // All types and functions within this file should be usable within both the hostApp and the enclave.
 namespace VbsEnclaveABI::Shared::Converters
@@ -18,17 +20,13 @@ namespace VbsEnclaveABI::Shared::Converters
     template <typename T>
     struct StructMetadata;
 
-    struct AbiRegisterVtl0Callbacks_args
-    {
-        std::vector<std::uint64_t> m_callback_addresses;
-        std::vector<std::string> m_callback_names;
-        std::int32_t m__return_value_;
-    };
-
     template <>
-    struct StructMetadata<AbiRegisterVtl0Callbacks_args>
+    struct StructMetadata<VbsEnclaveABI::Shared::AbiRegisterVtl0Callbacks_args>
     {
-        static constexpr auto members = std::make_tuple(&AbiRegisterVtl0Callbacks_args::m_callback_addresses, &AbiRegisterVtl0Callbacks_args::m_callback_names, &AbiRegisterVtl0Callbacks_args::m__return_value_);
+        static constexpr auto members = std::make_tuple(
+            &VbsEnclaveABI::Shared::AbiRegisterVtl0Callbacks_args::m_callback_addresses,
+            &VbsEnclaveABI::Shared::AbiRegisterVtl0Callbacks_args::m_callback_names,
+            &VbsEnclaveABI::Shared::AbiRegisterVtl0Callbacks_args::m__return_value_);
     };
 
     // Type traits
@@ -422,5 +420,70 @@ namespace VbsEnclaveABI::Shared::Converters
     inline void UpdateParameterValue(Src& src, Target& target)
     {
         target = std::move(src);
+    }
+
+
+    template<typename T>
+    struct FunctionTrait 
+    {
+        static_assert(false, "FunctionTrait only supports function pointers of the form ReturnT(*)(Args...)");
+    };
+
+    template<typename ReturnT, typename... Args>
+    struct FunctionTrait<ReturnT(*)(Args...)> {
+        using ReturnType = ReturnT;
+        static constexpr std::size_t arity = sizeof...(Args);
+        template<std::size_t N>
+        using arg = std::tuple_element_t<N, std::tuple<Args...>>;
+    };
+
+    template<typename Expected, typename Actual>
+    constexpr bool ShouldCallGet()
+    {
+        return RawPtr<Expected> &&
+            UniquePtr<Actual> &&
+            AreBothTheSame<std::decay_t<std::remove_pointer_t<Expected>>, unique_ptr_inner_type_t<Actual>>;
+    }
+
+    template<typename Expected, typename Actual>
+    constexpr decltype(auto) ConvertIfNeeded(Actual&& value)
+    {
+        // For when the function parameter is a raw pointer but struct field is a unique pointer.
+        if constexpr (ShouldCallGet<Expected, Actual>())
+        {
+            return value.get();
+        }
+        else
+        {
+            return (value);
+        }
+    }
+
+    template <Structure FlatBufferT, Structure DevTypeT, typename FuncT>
+    constexpr decltype(auto) ForwardAbiStructFieldsToDevImpl(DevTypeT& input_args, FuncT&& func)
+    {
+        using FuncTrait = FunctionTrait<std::decay_t<FuncT>>;
+
+        auto forward_to_developer_impl = [&]<std::size_t... I>(std::index_sequence<I...>) -> decltype(auto)
+        {
+            if constexpr (std::is_void_v<typename FuncTrait::ReturnType>)
+            {
+                std::invoke(
+                    std::forward<FuncT>(func),
+                    ConvertIfNeeded<typename FuncTrait::template arg<I>>(input_args.*(std::get<I>(StructMetadata<DevTypeT>::members)))...
+                );
+            }
+            else
+            {
+                input_args.m__return_value_ = std::invoke(
+                    std::forward<FuncT>(func),
+                    ConvertIfNeeded<typename FuncTrait::template arg<I>>(input_args.*(std::get<I>(StructMetadata<DevTypeT>::members)))...
+                );
+            }
+
+            return VbsEnclaveABI::Shared::PackFlatbuffer(ConvertStruct<FlatBufferT>(input_args));
+        };
+
+        return forward_to_developer_impl(std::make_index_sequence<FuncTrait::arity>{});
     }
 }
