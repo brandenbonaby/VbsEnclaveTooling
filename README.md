@@ -11,7 +11,7 @@ features that interact with a VBS enclave easier. To learn more about VBS enclav
 | C++ (20 or later) |    ✅     |
 | Rust              |    ❌     |
 
-#### Operating System Support
+#### Operating System Suppor
 
 | OS                  | Build                 |
 |---------------------|-----------------------|
